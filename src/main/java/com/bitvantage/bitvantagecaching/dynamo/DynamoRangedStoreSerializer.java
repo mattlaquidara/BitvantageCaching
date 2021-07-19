@@ -36,7 +36,7 @@ public interface DynamoRangedStoreSerializer<P extends PartitionKey, R extends R
         
     Item serialize(P partition, R range, V value);
     
-    V deserializeValue(Item item);
+    V deserializeValue(Item item) throws BitvantageStoreException;
     
     R deserializeRangeKey(Item item) throws BitvantageStoreException;
     

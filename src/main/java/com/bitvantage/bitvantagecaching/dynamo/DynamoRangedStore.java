@@ -253,18 +253,31 @@ public class DynamoRangedStore<P extends PartitionKey, R extends RangeKey<R>, V>
     @Override
     public V get(final P partition, final R range)
             throws BitvantageStoreException, InterruptedException {
+
+        final Item item = retrieveItem(partition, range);
+        return serializer.deserializeValue(item);
+    }
+
+    @Override
+    public boolean contains(final P partition, final R range) throws
+            BitvantageStoreException, InterruptedException {
+        
+        return retrieveItem(partition, range) != null;
+    }
+
+    private Item retrieveItem(final P partition, final R range)
+            throws BitvantageStoreException {
         final byte[] hashValue = serializer.getPartitionKey(partition);
         final KeyAttribute hashKey = new KeyAttribute(hashKeyName, hashValue);
 
         final byte[] rangeValue = serializer.getRangeKey(range);
         final KeyAttribute rangeKey = new KeyAttribute(rangeKeyName,
                                                        rangeValue);
-        
+
         final GetItemSpec spec = new GetItemSpec()
                 .withPrimaryKey(hashKey, rangeKey);
-        
-        final Item item = table.getItem(spec);
-        return serializer.deserializeValue(item);
+
+        return table.getItem(spec);
     }
 
 }

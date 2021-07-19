@@ -136,7 +136,7 @@ public class DynamoStore<P extends PartitionKey, V> implements Store<P, V> {
                 .withPrimaryKey(hashKey)
                 .withConsistentRead(true);
 
-        return table.getItem(hashKey);
+        return table.getItem(spec);
     }
 
 }

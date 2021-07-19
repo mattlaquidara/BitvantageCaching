@@ -134,4 +134,10 @@ public class TwoLevelCachingRangedStore<P extends PartitionKey, R extends RangeK
         return values.values().iterator().next();
     }
 
+    @Override
+    public boolean contains(P partition, R rangeValue) throws
+            BitvantageStoreException, InterruptedException {
+        return !getValuesInRange(partition, rangeValue, rangeValue).isEmpty();
+    }
+
 }

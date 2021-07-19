@@ -42,6 +42,9 @@ public interface RangedStore<P extends PartitionKey, R extends RangeKey<R>, V> {
     NavigableMap<R, V> getPartition(P partition)
             throws InterruptedException, BitvantageStoreException;
 
+    boolean contains(P partition, R rangeValue)
+            throws BitvantageStoreException, InterruptedException;
+    
     V get(P partition, R rangeValue)
             throws BitvantageStoreException, InterruptedException;
 

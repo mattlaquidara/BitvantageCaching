@@ -149,4 +149,11 @@ public class InMemoryPartitionedStore<P extends PartitionKey, R extends RangeKey
                 : partitionValues.get(rangeValue);
     }
 
+    @Override
+    public boolean contains(P partition, R rangeValue) throws
+            BitvantageStoreException, InterruptedException {
+        return partitionedMap.containsKey(partition) &&
+               partitionedMap.get(partition).containsKey(rangeValue);
+    }
+
 }

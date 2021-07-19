@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Matt Laquidara.
+ * Copyright 2021 Matt Laquidara.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import com.amazonaws.services.dynamodbv2.document.Expected;
 import com.amazonaws.services.dynamodbv2.document.Item;
 import com.bitvantage.bitvantagecaching.BitvantageStoreException;
 import com.bitvantage.bitvantagecaching.PartitionKey;
+import com.bitvantage.bitvantagecaching.RangeKey;
 import com.bitvantage.bitvantagecaching.VersionedWrapper;
 import java.nio.ByteBuffer;
 import java.util.UUID;
@@ -26,22 +27,27 @@ import lombok.RequiredArgsConstructor;
 
 /**
  *
- * @author Matt Laquidara
+ * @author Public Transit Analytics
  */
 @RequiredArgsConstructor
-public class VersionedDynamoStoreSerializer<P extends PartitionKey, V> {
+public class VersionedDynamoRangedStoreSerializer<P extends PartitionKey, R extends RangeKey<R>, V> {
 
-    private final DynamoStoreSerializer<P, V> serializer;
+    private final DynamoRangedStoreSerializer<P, R, V> serializer;
 
     public String getVersionKey() {
         return "version";
     }
 
-    public Item serialize(final P partition, final V value)
+    public Item serialize(final P partition, final R range, final V value)
             throws BitvantageStoreException {
-        final Item item = serializer.serialize(partition, value);
+        final Item item = serializer.serialize(partition, range, value);
         final byte[] uuidBytes = getUuidBytes(UUID.randomUUID());
         return item.withBinary(getVersionKey(), uuidBytes);
+    }
+    
+    public R deserializeRangeKey(final Item item) 
+            throws BitvantageStoreException {
+        return serializer.deserializeRangeKey(item);
     }
 
     public VersionedWrapper<V> deserializeValue(final Item item)
@@ -63,7 +69,7 @@ public class VersionedDynamoStoreSerializer<P extends PartitionKey, V> {
     public Expected getExpectation(final UUID match) {
         return new Expected(getVersionKey()).eq(getUuidBytes(match));
     }
-    
+
     public Expected getNonexistenceExpectation() {
         return new Expected(getVersionKey()).notExist();
     }
@@ -74,6 +80,14 @@ public class VersionedDynamoStoreSerializer<P extends PartitionKey, V> {
 
     public String getPartitionKeyName() throws BitvantageStoreException {
         return serializer.getPartitionKeyName();
+    }
+
+    public byte[] getRangeKey(final R key) throws BitvantageStoreException {
+        return serializer.getRangeKey(key);
+    }
+
+    public String getRangeKeyName() throws BitvantageStoreException {
+        return serializer.getRangeKeyName();
     }
 
     private static byte[] getUuidBytes(final UUID uuid) {

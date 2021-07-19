@@ -27,7 +27,10 @@ public interface OptimisticLockingStore<K extends PartitionKey, V> {
     public VersionedWrapper<V> get(final K key) throws BitvantageStoreException,
             InterruptedException;
 
-    Optional<V> putOnMatch(K key, V value, UUID match)
+    Optional<UUID> putOnMatch(K key, V value, UUID match)
+            throws BitvantageStoreException, InterruptedException;
+    
+    Optional<UUID> putIfAbsent(K key, V value)
             throws BitvantageStoreException, InterruptedException;
 
     void put(K key, V value)

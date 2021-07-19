@@ -16,22 +16,19 @@
 package com.bitvantage.bitvantagecaching;
 
 import java.util.Optional;
-import java.util.Random;
 import java.util.UUID;
 
 /**
  *
  * @author Matt Laquidara
  */
-public class OpimisticLockingWrapper<K extends PartitionKey, V>
+public class OptimisticLockingWrapper<K extends PartitionKey, V>
         implements OptimisticLockingStore<K, V> {
 
     final Store<K, VersionedWrapper<V>> store;
-    final Random random;
 
-    public OpimisticLockingWrapper(final Store<K, VersionedWrapper<V>> store) {
+    public OptimisticLockingWrapper(final Store<K, VersionedWrapper<V>> store) {
         this.store = store;
-        random = new Random();
     }
 
     @Override
@@ -41,13 +38,24 @@ public class OpimisticLockingWrapper<K extends PartitionKey, V>
     }
 
     @Override
-    public synchronized Optional<V> putOnMatch(
+    public synchronized Optional<UUID> putOnMatch(
             final K key, final V value, final UUID match)
             throws BitvantageStoreException, InterruptedException {
         final VersionedWrapper<V> oldVersion = store.get(key);
         if (oldVersion.getVersion().equals(match)) {
-            put(key, value);
-            return Optional.of(oldVersion.getValue());
+            final VersionedWrapper<V> newWrapper = putAndGetVersion(key, value);
+            return Optional.of(newWrapper.getVersion());
+        }
+        return Optional.empty();
+    }
+
+    @Override
+    public synchronized Optional<UUID> putIfAbsent(
+            final K key, final V value)
+            throws BitvantageStoreException, InterruptedException {
+        if (!store.containsKey(key)) {
+            final VersionedWrapper<V> newWrapper = putAndGetVersion(key, value);
+            return Optional.of(newWrapper.getVersion());
         }
         return Optional.empty();
     }
@@ -56,6 +64,15 @@ public class OpimisticLockingWrapper<K extends PartitionKey, V>
     public void put(K key, V value) throws BitvantageStoreException,
             InterruptedException {
         store.put(key, new VersionedWrapper(UUID.randomUUID(), value));
+    }
+
+    private VersionedWrapper<V> putAndGetVersion(K key, V value)
+            throws BitvantageStoreException,
+            InterruptedException {
+        final VersionedWrapper<V> wrapper
+                = new VersionedWrapper(UUID.randomUUID(), value);
+        store.put(key, wrapper);
+        return wrapper;
     }
 
 }

@@ -20,12 +20,10 @@ import com.amazonaws.services.dynamodbv2.document.DynamoDB;
 import com.amazonaws.services.dynamodbv2.document.Expected;
 import com.amazonaws.services.dynamodbv2.document.Item;
 import com.amazonaws.services.dynamodbv2.document.KeyAttribute;
-import com.amazonaws.services.dynamodbv2.document.PutItemOutcome;
 import com.amazonaws.services.dynamodbv2.document.Table;
 import com.amazonaws.services.dynamodbv2.document.spec.GetItemSpec;
 import com.amazonaws.services.dynamodbv2.document.spec.PutItemSpec;
 import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
-import com.amazonaws.services.dynamodbv2.model.ReturnValue;
 import com.bitvantage.bitvantagecaching.BitvantageStoreException;
 import com.bitvantage.bitvantagecaching.OptimisticLockingStore;
 import com.bitvantage.bitvantagecaching.PartitionKey;
@@ -50,7 +48,7 @@ public class DynamoOptimisticLockingStore<K extends PartitionKey, V>
 
     public DynamoOptimisticLockingStore(
             final AmazonDynamoDB client, final String table,
-            final VersionedDynamoStoreSerializer<K, V> serializer) 
+            final VersionedDynamoStoreSerializer<K, V> serializer)
             throws BitvantageStoreException {
         this.dynamo = new DynamoDB(client);
         this.table = dynamo.getTable(table);
@@ -66,25 +64,46 @@ public class DynamoOptimisticLockingStore<K extends PartitionKey, V>
     }
 
     @Override
-    public Optional<V> putOnMatch(final K key, final V value, final UUID match)
+    public Optional<UUID> putOnMatch(final K key, final V value,
+                                     final UUID match)
             throws BitvantageStoreException, InterruptedException {
         final Item item = serializer.serialize(key, value);
 
         final Expected expected = serializer.getExpectation(match);
         final PutItemSpec request = new PutItemSpec()
                 .withExpected(expected)
-                .withItem(item)
-                .withReturnValues(ReturnValue.ALL_OLD);
+                .withItem(item);
 
         try {
-            final PutItemOutcome outcome = table.putItem(request);
-            final Item oldItem = outcome.getItem();
-            final VersionedWrapper<V> oldValue
-                    = serializer.deserializeValue(oldItem);
-            return Optional.of(oldValue.getValue());
+            table.putItem(request);
+            final UUID uuid = serializer.deserializeUuid(item);
+
+            return Optional.of(uuid);
         } catch (final ConditionalCheckFailedException e) {
             log.info("Condition checked failed: " +
                      "key={} value={} match={}.", key, value, match, e);
+            return Optional.empty();
+        }
+    }
+
+    @Override
+    public Optional<UUID> putIfAbsent(final K key, final V value)
+            throws BitvantageStoreException, InterruptedException  {
+        final Item item = serializer.serialize(key, value);
+
+        final Expected expected = serializer.getNonexistenceExpectation();
+        final PutItemSpec request = new PutItemSpec()
+                .withExpected(expected)
+                .withItem(item);
+
+        try {
+            table.putItem(request);
+            final UUID uuid = serializer.deserializeUuid(item);
+
+            return Optional.of(uuid);
+        } catch (final ConditionalCheckFailedException e) {
+            log.info("Nonexistince checked failed: " +
+                     "key={} value={} match={}.", key, value, e);
             return Optional.empty();
         }
     }

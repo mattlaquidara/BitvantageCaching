@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Public Transit Analytics.
+ * Copyright 2019 Matt Laquidara.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package com.bitvantage.bitvantagecaching.s3;
 
 import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3Object;
@@ -51,9 +52,18 @@ public class S3Store<P extends PartitionKey, V> implements Store<P, V> {
     @Override
     public V get(final P key) throws BitvantageStoreException,
             InterruptedException {
-        final String keyString = serializer.getKey(key);
-        final S3Object object = s3.getObject(bucket, keyString);
-        return serializer.deserializeValue(object);
+        try {
+            final String keyString = serializer.getKey(key);
+
+            final S3Object object = s3.getObject(bucket, keyString);
+            return serializer.deserializeValue(object);
+        } catch (final AmazonS3Exception e) {
+            if (e.getStatusCode() == 404) {
+                return null;
+            }
+            throw e;
+        }
+
     }
 
     @Override

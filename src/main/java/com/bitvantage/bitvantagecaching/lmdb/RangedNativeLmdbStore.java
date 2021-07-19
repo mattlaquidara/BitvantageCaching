@@ -317,4 +317,10 @@ public class RangedNativeLmdbStore<P extends PartitionKey, R extends RangeKey<R>
         }
     }
 
+    @Override
+    public boolean contains(P partition, R rangeValue) throws
+            BitvantageStoreException, InterruptedException {
+        return get(partition, rangeValue) != null;
+    }
+
 }
