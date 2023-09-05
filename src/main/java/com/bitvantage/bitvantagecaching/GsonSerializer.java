@@ -19,10 +19,6 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import java.nio.charset.StandardCharsets;
 
-/**
- *
- * @author Matt Laquidara
- */
 public class GsonSerializer<V> implements ValueSerializer<V> {
 
     private final Gson gson;
