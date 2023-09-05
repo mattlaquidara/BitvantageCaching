@@ -22,10 +22,6 @@ import com.google.common.collect.RangeMap;
 import java.util.Map;
 import java.util.NavigableMap;
 
-/**
- *
- * @author Matt Laquidara
- */
 public class TwoLevelCachingRangedStore<P extends PartitionKey, R extends RangeKey<R>, V>
         implements RangedConditionedStore<P, R, V> {
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Public Transit Analytics.
+ * Copyright 2021 Matt Laquidara.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,10 +19,6 @@ import java.util.NavigableMap;
 import java.util.Optional;
 import java.util.UUID;
 
-/**
- *
- * @author Public Transit Analytics
- */
 public interface RangedOptimisticLockingStore<P extends PartitionKey, R extends RangeKey<R>, V> {
 
     VersionedWrapper<V> get(final P partition, final R range) throws

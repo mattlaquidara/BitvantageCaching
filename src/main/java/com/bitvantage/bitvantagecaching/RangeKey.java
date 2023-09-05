@@ -15,10 +15,6 @@
  */
 package com.bitvantage.bitvantagecaching;
 
-/**
- *
- * @author Matt Laquidara
- */
 public interface RangeKey<R extends RangeKey> extends Comparable<R> {
 
     R getRangeMin();

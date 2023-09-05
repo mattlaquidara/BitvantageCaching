@@ -26,10 +26,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.SortedMap;
 
-/**
- *
- * @author Matt Laquidara
- */
 public class UnboundedRangedCache<P extends PartitionKey, R extends RangeKey<R>, V>
         implements RangedCache<P, R, V> {
 

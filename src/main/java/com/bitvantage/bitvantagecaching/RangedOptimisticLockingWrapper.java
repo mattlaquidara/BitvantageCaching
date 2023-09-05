@@ -20,10 +20,6 @@ import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 
-/**
- *
- * @author Public Transit Analytics
- */
 @RequiredArgsConstructor
 public class RangedOptimisticLockingWrapper<P extends PartitionKey, R extends RangeKey<R>, V>
         implements RangedOptimisticLockingStore<P, R, V> {

@@ -35,9 +35,6 @@ import com.google.common.collect.ImmutableMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * @author Matt Laquidara
- */
 public class DynamoStore<P extends PartitionKey, V> implements Store<P, V> {
 
   private static final int BATCH_SIZE = 25;

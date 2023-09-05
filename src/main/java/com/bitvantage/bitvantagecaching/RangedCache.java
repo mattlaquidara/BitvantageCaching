@@ -18,10 +18,6 @@ package com.bitvantage.bitvantagecaching;
 import com.google.common.collect.RangeMap;
 import java.util.SortedMap;
 
-/**
- *
- * @author Matt Laquidara
- */
 public interface RangedCache<P extends PartitionKey, R extends RangeKey<R>, V> {
 
     public RangeMap<R, RangeStatus<R, V>> getRange(P partition, R min, R max)

@@ -31,10 +31,6 @@ import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 
-/**
- *
- * @author Public Transit Analytics
- */
 @RequiredArgsConstructor
 public class S3Store<P extends PartitionKey, V> implements Store<P, V> {
 

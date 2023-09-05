@@ -15,10 +15,6 @@
  */
 package com.bitvantage.bitvantagecaching;
 
-/**
- *
- * @author Public Transit Analytics
- */
 public interface RangedConditionedStore<P extends PartitionKey, R extends RangeKey<R>, V>
 
         extends RangedStore<P, R, V> {

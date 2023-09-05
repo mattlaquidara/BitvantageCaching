@@ -15,10 +15,6 @@
  */
 package com.bitvantage.bitvantagecaching;
 
-/**
- *
- * @author Matt Laquidara
- */
 public class DummySerializer implements ValueSerializer<Byte> {
 
     private static final byte[] NO_BYTES = new byte[0];

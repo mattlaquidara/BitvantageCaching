@@ -38,10 +38,6 @@ import java.util.Optional;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 
-/**
- *
- * @author Public Transit Analytics
- */
 @Slf4j
 public class DynamoRangedOptimisticLockingStore<P extends PartitionKey, R extends RangeKey<R>, V> implements RangedOptimisticLockingStore<P, R, V> {
 

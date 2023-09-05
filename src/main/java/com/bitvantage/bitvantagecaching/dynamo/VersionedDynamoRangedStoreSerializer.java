@@ -25,10 +25,6 @@ import java.nio.ByteBuffer;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 
-/**
- *
- * @author Public Transit Analytics
- */
 @RequiredArgsConstructor
 public class VersionedDynamoRangedStoreSerializer<P extends PartitionKey, R extends RangeKey<R>, V> {
 

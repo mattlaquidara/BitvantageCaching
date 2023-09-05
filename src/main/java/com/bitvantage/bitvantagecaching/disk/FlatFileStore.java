@@ -24,12 +24,7 @@ import java.nio.file.Path;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import com.bitvantage.bitvantagecaching.ValueSerializer;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
-/**
- * @author Matt Laquidara
- */
 @RequiredArgsConstructor
 public class FlatFileStore<K extends PartitionKey, V> implements Store<K, V> {
 

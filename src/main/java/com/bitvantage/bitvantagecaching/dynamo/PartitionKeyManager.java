@@ -17,10 +17,6 @@ package com.bitvantage.bitvantagecaching.dynamo;
 
 import com.bitvantage.bitvantagecaching.PartitionKey;
 
-/**
- *
- * @author Matt Laquidara
- */
 public interface PartitionKeyManager<P extends PartitionKey> {
     
     String getKey(P key);

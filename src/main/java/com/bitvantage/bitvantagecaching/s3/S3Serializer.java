@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Public Transit Analytics.
+ * Copyright 2019 Matt Laquidara.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,10 +19,6 @@ import com.amazonaws.services.s3.model.S3Object;
 import com.bitvantage.bitvantagecaching.BitvantageStoreException;
 import com.bitvantage.bitvantagecaching.PartitionKey;
 
-/**
- *
- * @author Public Transit Analytics
- */
 public interface S3Serializer<P extends PartitionKey, V> {
 
     String getKey(P key) throws BitvantageStoreException;

@@ -18,10 +18,6 @@ package com.bitvantage.bitvantagecaching;
 import java.util.UUID;
 import lombok.Value;
 
-/**
- *
- * @author Matt Laquidara
- */
 @Value
 public class VersionedWrapper<O> {
     private final UUID version;

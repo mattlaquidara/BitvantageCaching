@@ -19,10 +19,6 @@ import java.util.Map;
 import java.util.Set;
 import lombok.Value;
 
-/**
- *
- * @author Matt Laquidara
- */
 @Value
 public class CacheResult<P extends PartitionKey, V> {
     

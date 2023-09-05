@@ -18,10 +18,6 @@ package com.bitvantage.bitvantagecaching;
 import java.util.Optional;
 import java.util.UUID;
 
-/**
- *
- * @author Matt Laquidara
- */
 public class OptimisticLockingWrapper<K extends PartitionKey, V>
         implements OptimisticLockingStore<K, V> {
 

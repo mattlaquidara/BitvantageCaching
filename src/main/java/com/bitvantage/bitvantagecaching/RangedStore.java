@@ -18,10 +18,6 @@ package com.bitvantage.bitvantagecaching;
 import java.util.Map;
 import java.util.NavigableMap;
 
-/**
- *
- * @author Matt Laquidara
- */
 public interface RangedStore<P extends PartitionKey, R extends RangeKey<R>, V> {
 
     NavigableMap<R, V> getValuesInRange(P partition, R min, R max)

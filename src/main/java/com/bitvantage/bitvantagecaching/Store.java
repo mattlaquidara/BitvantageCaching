@@ -19,8 +19,6 @@ import java.util.Map;
 
 /**
  * Interface for a key-value store.
- * 
- * @author Matt Laquidara
  */
 public interface Store<K extends PartitionKey, V> {
 

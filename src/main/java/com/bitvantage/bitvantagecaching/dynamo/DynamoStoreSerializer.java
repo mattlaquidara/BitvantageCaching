@@ -19,10 +19,6 @@ import com.amazonaws.services.dynamodbv2.document.Item;
 import com.bitvantage.bitvantagecaching.BitvantageStoreException;
 import com.bitvantage.bitvantagecaching.PartitionKey;
 
-/**
- *
- * @author Matt Laquidara
- */
 public interface DynamoStoreSerializer<P extends PartitionKey, V> {
 
     byte[] getPartitionKey(P key) throws BitvantageStoreException;

@@ -15,14 +15,9 @@
  */
 package com.bitvantage.bitvantagecaching;
 
-import java.util.List;
 import java.util.SortedMap;
 import lombok.Value;
 
-/**
- *
- * @author Matt Laquidara
- */
 @Value
 public class RangeStatus<K, V> {
     

@@ -18,10 +18,6 @@ package com.bitvantage.bitvantagecaching;
 import java.util.Optional;
 import java.util.UUID;
 
-/**
- *
- * @author Matt Laquidara
- */
 public interface OptimisticLockingStore<K extends PartitionKey, V> {
 
     public VersionedWrapper<V> get(final K key) throws BitvantageStoreException,

@@ -32,10 +32,6 @@ import java.util.Optional;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 
-/**
- *
- * @author Matt Laquidara
- */
 @Slf4j
 public class DynamoOptimisticLockingStore<K extends PartitionKey, V>
         implements OptimisticLockingStore<K, V> {

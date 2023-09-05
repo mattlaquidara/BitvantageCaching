@@ -20,10 +20,6 @@ import com.bitvantage.bitvantagecaching.BitvantageStoreException;
 import com.bitvantage.bitvantagecaching.PartitionKey;
 import com.bitvantage.bitvantagecaching.RangeKey;
 
-/**
- *
- * @author Matt Laquidara
- */
 public interface DynamoRangedStoreSerializer<P extends PartitionKey, R extends RangeKey<R>, V> {
                 
     byte[] getPartitionKey(P key);

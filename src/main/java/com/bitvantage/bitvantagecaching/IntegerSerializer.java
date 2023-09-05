@@ -16,12 +16,7 @@
 package com.bitvantage.bitvantagecaching;
 
 import com.google.common.primitives.Ints;
-import com.bitvantage.bitvantagecaching.ValueSerializer;
 
-/**
- *
- * @author Matt Laquidara
- */
 public class IntegerSerializer implements ValueSerializer<Integer> {
 
     @Override

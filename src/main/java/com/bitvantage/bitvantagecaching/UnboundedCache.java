@@ -17,10 +17,6 @@ package com.bitvantage.bitvantagecaching;
 
 import lombok.RequiredArgsConstructor;
 
-/**
- *
- * @author Matt Laquidara
- */
 @RequiredArgsConstructor
 public class UnboundedCache<K extends PartitionKey, V> implements TwoLevelCache<K, V> {
 

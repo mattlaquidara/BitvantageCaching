@@ -17,8 +17,6 @@ package com.bitvantage.bitvantagecaching;
 
 /**
  * Interface for a key-value cache.
- *
- * @author Matt Laquidara
  */
 public interface TwoLevelCache<P extends PartitionKey, V> {
 

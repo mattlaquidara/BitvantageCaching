@@ -41,10 +41,6 @@ import java.util.NavigableMap;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 
-/**
- *
- * @author Matt Laquidara
- */
 @Slf4j
 public class DynamoRangedStore<P extends PartitionKey, R extends RangeKey<R>, V>
         implements RangedConditionedStore<P, R, V> {

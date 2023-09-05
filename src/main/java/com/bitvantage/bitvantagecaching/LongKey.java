@@ -18,10 +18,6 @@ package com.bitvantage.bitvantagecaching;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-/**
- *
- * @author Matt Laquidara
- */
 @RequiredArgsConstructor
 public class LongKey implements RangeKey<LongKey> {
 

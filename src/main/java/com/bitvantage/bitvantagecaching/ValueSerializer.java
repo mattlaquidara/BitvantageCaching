@@ -15,10 +15,6 @@
  */
 package com.bitvantage.bitvantagecaching;
 
-/**
- *
- * @author Matt Laquidara
- */
 public interface ValueSerializer<V> {
     
     byte[] getBytes(V value) throws BitvantageStoreException;

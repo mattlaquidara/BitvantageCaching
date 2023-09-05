@@ -20,10 +20,6 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-/**
- *
- * @author Matt Laquidara
- */
 @RequiredArgsConstructor
 @EqualsAndHashCode
 public class TestPartitionKey implements PartitionKey {

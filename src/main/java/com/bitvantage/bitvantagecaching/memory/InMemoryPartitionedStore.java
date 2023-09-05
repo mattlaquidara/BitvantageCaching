@@ -26,10 +26,6 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 
-/**
- *
- * @author Matt Laquidara
- */
 public class InMemoryPartitionedStore<P extends PartitionKey, R extends RangeKey<R>, V>
         implements RangedConditionedStore<P, R, V> {
 

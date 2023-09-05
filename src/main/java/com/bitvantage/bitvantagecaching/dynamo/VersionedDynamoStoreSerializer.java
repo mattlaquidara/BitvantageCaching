@@ -24,10 +24,6 @@ import java.nio.ByteBuffer;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 
-/**
- *
- * @author Matt Laquidara
- */
 @RequiredArgsConstructor
 public class VersionedDynamoStoreSerializer<P extends PartitionKey, V> {
 

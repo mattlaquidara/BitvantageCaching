@@ -16,12 +16,7 @@
 package com.bitvantage.bitvantagecaching;
 
 import java.nio.ByteBuffer;
-import com.bitvantage.bitvantagecaching.ValueSerializer;
 
-/**
- *
- * @author Matt Laquidara
- */
 public class DoubleSerializer implements ValueSerializer<Double> {
 
     @Override

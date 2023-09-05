@@ -22,9 +22,6 @@ import com.google.common.collect.ImmutableMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * @author Matt Laquidara
- */
 public class InMemoryHashStore<K extends PartitionKey, V> implements Store<K, V> {
 
   private final Map<K, V> map;

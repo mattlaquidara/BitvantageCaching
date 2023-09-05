@@ -18,9 +18,6 @@ package com.bitvantage.bitvantagecaching;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 
-/**
- * @author Matt Laquidara
- */
 @RequiredArgsConstructor
 public class TwoLevelCachingStore<K extends PartitionKey, V> implements Store<K, V> {
 

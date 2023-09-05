@@ -17,10 +17,6 @@ package com.bitvantage.bitvantagecaching.disk;
 
 import com.bitvantage.bitvantagecaching.PartitionKey;
 
-/**
- *
- * @author Matt Laquidara
- */
 public interface FileManager<K extends PartitionKey> {
     String getName(K key);
 }
