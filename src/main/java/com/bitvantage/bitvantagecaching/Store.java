@@ -41,4 +41,7 @@ public interface Store<K extends PartitionKey, V> {
     boolean isEmpty() throws BitvantageStoreException, 
             InterruptedException;
     
+    void delete(final K key) throws BitvantageStoreException,
+            InterruptedException; 
+    
 }

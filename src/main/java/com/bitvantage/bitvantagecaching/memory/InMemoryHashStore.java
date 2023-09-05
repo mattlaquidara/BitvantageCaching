@@ -15,6 +15,7 @@
  */
 package com.bitvantage.bitvantagecaching.memory;
 
+import com.bitvantage.bitvantagecaching.BitvantageStoreException;
 import com.bitvantage.bitvantagecaching.PartitionKey;
 import com.bitvantage.bitvantagecaching.Store;
 import com.google.common.collect.ImmutableMap;
@@ -22,46 +23,48 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- *
  * @author Matt Laquidara
  */
-public class InMemoryHashStore<K extends PartitionKey, V> 
-        implements Store<K, V> {
+public class InMemoryHashStore<K extends PartitionKey, V> implements Store<K, V> {
 
-    private final Map<K, V> map;
+  private final Map<K, V> map;
 
-    public InMemoryHashStore() {
-        map = new ConcurrentHashMap<>();
-    }
+  public InMemoryHashStore() {
+    map = new ConcurrentHashMap<>();
+  }
 
-    @Override
-    public boolean containsKey(K key) {
-        return map.containsKey(key);
-    }
+  @Override
+  public boolean containsKey(K key) {
+    return map.containsKey(key);
+  }
 
-    @Override
-    public V get(K key) {
-        return map.get(key);
-    }
+  @Override
+  public V get(K key) {
+    return map.get(key);
+  }
 
-    @Override
-    public void put(K key, V value) {
-        map.put(key, value);
-    }
+  @Override
+  public void put(K key, V value) {
+    map.put(key, value);
+  }
 
-    @Override
-    public boolean isEmpty() {
-        return map.isEmpty();
-    }
+  @Override
+  public boolean isEmpty() {
+    return map.isEmpty();
+  }
 
-    @Override
-    public Map<K, V> getAll() {
-        return ImmutableMap.copyOf(map);
-    }
+  @Override
+  public Map<K, V> getAll() {
+    return ImmutableMap.copyOf(map);
+  }
 
-    @Override
-    public void putAll(final Map<K, V> entries) {
-        map.putAll(entries);
-    }
+  @Override
+  public void putAll(final Map<K, V> entries) {
+    map.putAll(entries);
+  }
 
+  @Override
+  public void delete(final K key) throws BitvantageStoreException, InterruptedException {
+    map.remove(key);
+  }
 }

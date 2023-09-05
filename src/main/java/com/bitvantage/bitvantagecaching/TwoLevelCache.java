@@ -27,4 +27,7 @@ public interface TwoLevelCache<P extends PartitionKey, V> {
     void put(P key, V value) throws InterruptedException,
             BitvantageStoreException;
     
+    void invalidate(P key) throws InterruptedException,
+            BitvantageStoreException;
+    
 }

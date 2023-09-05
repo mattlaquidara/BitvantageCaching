@@ -47,4 +47,9 @@ public class UnboundedCache<K extends PartitionKey, V> implements TwoLevelCache<
         store.put(key, value);
     }
 
+  @Override
+  public void invalidate(K key) throws InterruptedException, BitvantageStoreException {
+    store.delete(key);
+  }
+
 }
