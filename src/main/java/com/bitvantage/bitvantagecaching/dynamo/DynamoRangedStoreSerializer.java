@@ -15,10 +15,11 @@
  */
 package com.bitvantage.bitvantagecaching.dynamo;
 
-import com.amazonaws.services.dynamodbv2.document.Item;
 import com.bitvantage.bitvantagecaching.BitvantageStoreException;
 import com.bitvantage.bitvantagecaching.PartitionKey;
 import com.bitvantage.bitvantagecaching.RangeKey;
+import java.util.Map;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 public interface DynamoRangedStoreSerializer<P extends PartitionKey, R extends RangeKey<R>, V> {
                 
@@ -30,12 +31,12 @@ public interface DynamoRangedStoreSerializer<P extends PartitionKey, R extends R
     
     String getRangeKeyName();
         
-    Item serialize(P partition, R range, V value);
+    Map<String,AttributeValue> serialize(P partition, R range, V value);
     
-    V deserializeValue(Item item) throws BitvantageStoreException;
+    V deserializeValue(Map<String,AttributeValue> item) throws BitvantageStoreException;
     
-    R deserializeRangeKey(Item item) throws BitvantageStoreException;
+    R deserializeRangeKey(Map<String,AttributeValue> item) throws BitvantageStoreException;
     
-    P deserializePartitionKey(Item item) throws BitvantageStoreException;
+    P deserializePartitionKey(Map<String,AttributeValue> item) throws BitvantageStoreException;
     
 }

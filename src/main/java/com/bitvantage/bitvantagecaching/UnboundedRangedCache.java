@@ -107,4 +107,10 @@ public class UnboundedRangedCache<P extends PartitionKey, R extends RangeKey<R>,
 
     }
 
+  @Override
+  public void invalidate(P partition) throws InterruptedException, BitvantageStoreException {
+    partitionedRequestedRanges.remove(partition);
+    store.delete(partition);
+  }
+
 }

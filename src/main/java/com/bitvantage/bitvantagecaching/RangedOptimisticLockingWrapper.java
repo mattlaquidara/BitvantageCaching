@@ -27,7 +27,7 @@ public class RangedOptimisticLockingWrapper<P extends PartitionKey, R extends Ra
     private final RangedStore<P, R, VersionedWrapper<V>> store;
 
     @Override
-    public VersionedWrapper<V> get(final P partition, final R range)
+    public Optional<VersionedWrapper<V>> get(final P partition, final R range)
             throws BitvantageStoreException, InterruptedException {
         return store.get(partition, range);
     }
@@ -60,13 +60,19 @@ public class RangedOptimisticLockingWrapper<P extends PartitionKey, R extends Ra
     @Override
     public Optional<UUID> putOnMatch(P partition, R range, V value, UUID match)
             throws BitvantageStoreException, InterruptedException {
-        final VersionedWrapper<V> oldVersion = store.get(partition, range);
-        if (oldVersion.getVersion().equals(match)) {
+        final Optional<VersionedWrapper<V>> oldVersion = store.get(partition, range);
+        
+        final Optional<UUID> newVersion;
+        if (oldVersion.isEmpty()) {
+          newVersion = Optional.empty();
+        } else if (oldVersion.get().getVersion().equals(match)) {
             final VersionedWrapper<V> newWrapper = putAndGetVersion(
                     partition, range, value);
-            return Optional.of(newWrapper.getVersion());
+            newVersion = Optional.of(newWrapper.getVersion());
+        } else {
+          newVersion = Optional.empty();
         }
-        return Optional.empty();
+        return newVersion;
     }
     
     private VersionedWrapper<V> putAndGetVersion(P partition, R range, V value)
@@ -77,5 +83,10 @@ public class RangedOptimisticLockingWrapper<P extends PartitionKey, R extends Ra
         store.put(partition, range, wrapper);
         return wrapper;
     }
+
+  @Override
+  public void delete(final P partition) throws BitvantageStoreException, InterruptedException {
+    store.delete(partition);
+  }
 
 }

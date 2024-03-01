@@ -21,7 +21,7 @@ import java.util.UUID;
 
 public interface RangedOptimisticLockingStore<P extends PartitionKey, R extends RangeKey<R>, V> {
 
-    VersionedWrapper<V> get(final P partition, final R range) throws
+    Optional<VersionedWrapper<V>> get(final P partition, final R range) throws
             BitvantageStoreException, InterruptedException;
 
     NavigableMap<R, VersionedWrapper<V>> getPartition(final P partition) throws
@@ -36,5 +36,6 @@ public interface RangedOptimisticLockingStore<P extends PartitionKey, R extends 
     Optional<UUID> putOnMatch(final P partition, final R range, final V value,
                               final UUID match) throws BitvantageStoreException,
             InterruptedException;
-    
+
+  public void delete(P partition) throws BitvantageStoreException, InterruptedException;
 }

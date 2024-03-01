@@ -15,6 +15,7 @@
  */
 package com.bitvantage.bitvantagecaching;
 
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
@@ -26,9 +27,9 @@ public class UnboundedCache<K extends PartitionKey, V> implements TwoLevelCache<
     private int puts = 0;
 
     @Override
-    public V get(K key) throws InterruptedException, BitvantageStoreException {
-        V value = store.get(key);
-        if (value == null) {
+    public Optional<V> get(K key) throws InterruptedException, BitvantageStoreException {
+        final Optional<V> value = store.get(key);
+        if (value.isPresent()) {
             misses++;
         } else {
             hits++;

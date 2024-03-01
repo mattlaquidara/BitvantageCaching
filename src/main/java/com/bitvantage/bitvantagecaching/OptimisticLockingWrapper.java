@@ -19,56 +19,57 @@ import java.util.Optional;
 import java.util.UUID;
 
 public class OptimisticLockingWrapper<K extends PartitionKey, V>
-        implements OptimisticLockingStore<K, V> {
+    implements OptimisticLockingStore<K, V> {
 
-    final Store<K, VersionedWrapper<V>> store;
+  final Store<K, VersionedWrapper<V>> store;
 
-    public OptimisticLockingWrapper(final Store<K, VersionedWrapper<V>> store) {
-        this.store = store;
+  public OptimisticLockingWrapper(final Store<K, VersionedWrapper<V>> store) {
+    this.store = store;
+  }
+
+  @Override
+  public Optional<VersionedWrapper<V>> get(final K key)
+      throws BitvantageStoreException, InterruptedException {
+    return store.get(key);
+  }
+
+  @Override
+  public synchronized Optional<UUID> putOnMatch(final K key, final V value, final UUID match)
+      throws BitvantageStoreException, InterruptedException {
+    final Optional<VersionedWrapper<V>> optinalOldVersion = store.get(key);
+
+    final Optional<UUID> response;
+    if (optinalOldVersion.isEmpty()) {
+      response = Optional.empty();
+    } else if (optinalOldVersion.get().getVersion().equals(match)) {
+      final VersionedWrapper<V> newWrapper = putAndGetVersion(key, value);
+      response = Optional.of(newWrapper.getVersion());
+    } else {
+      response = Optional.empty();
     }
 
-    @Override
-    public VersionedWrapper<V> get(final K key) throws BitvantageStoreException,
-            InterruptedException {
-        return store.get(key);
-    }
+    return response;
+  }
 
-    @Override
-    public synchronized Optional<UUID> putOnMatch(
-            final K key, final V value, final UUID match)
-            throws BitvantageStoreException, InterruptedException {
-        final VersionedWrapper<V> oldVersion = store.get(key);
-        if (oldVersion.getVersion().equals(match)) {
-            final VersionedWrapper<V> newWrapper = putAndGetVersion(key, value);
-            return Optional.of(newWrapper.getVersion());
-        }
-        return Optional.empty();
+  @Override
+  public synchronized Optional<UUID> putIfAbsent(final K key, final V value)
+      throws BitvantageStoreException, InterruptedException {
+    if (!store.containsKey(key)) {
+      final VersionedWrapper<V> newWrapper = putAndGetVersion(key, value);
+      return Optional.of(newWrapper.getVersion());
     }
+    return Optional.empty();
+  }
 
-    @Override
-    public synchronized Optional<UUID> putIfAbsent(
-            final K key, final V value)
-            throws BitvantageStoreException, InterruptedException {
-        if (!store.containsKey(key)) {
-            final VersionedWrapper<V> newWrapper = putAndGetVersion(key, value);
-            return Optional.of(newWrapper.getVersion());
-        }
-        return Optional.empty();
-    }
+  @Override
+  public void put(K key, V value) throws BitvantageStoreException, InterruptedException {
+    store.put(key, new VersionedWrapper(UUID.randomUUID(), value));
+  }
 
-    @Override
-    public void put(K key, V value) throws BitvantageStoreException,
-            InterruptedException {
-        store.put(key, new VersionedWrapper(UUID.randomUUID(), value));
-    }
-
-    private VersionedWrapper<V> putAndGetVersion(K key, V value)
-            throws BitvantageStoreException,
-            InterruptedException {
-        final VersionedWrapper<V> wrapper
-                = new VersionedWrapper(UUID.randomUUID(), value);
-        store.put(key, wrapper);
-        return wrapper;
-    }
-
+  private VersionedWrapper<V> putAndGetVersion(K key, V value)
+      throws BitvantageStoreException, InterruptedException {
+    final VersionedWrapper<V> wrapper = new VersionedWrapper(UUID.randomUUID(), value);
+    store.put(key, wrapper);
+    return wrapper;
+  }
 }

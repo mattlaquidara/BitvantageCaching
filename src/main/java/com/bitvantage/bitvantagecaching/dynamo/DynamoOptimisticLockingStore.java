@@ -15,110 +15,113 @@
  */
 package com.bitvantage.bitvantagecaching.dynamo;
 
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
-import com.amazonaws.services.dynamodbv2.document.DynamoDB;
-import com.amazonaws.services.dynamodbv2.document.Expected;
-import com.amazonaws.services.dynamodbv2.document.Item;
-import com.amazonaws.services.dynamodbv2.document.KeyAttribute;
-import com.amazonaws.services.dynamodbv2.document.Table;
-import com.amazonaws.services.dynamodbv2.document.spec.GetItemSpec;
-import com.amazonaws.services.dynamodbv2.document.spec.PutItemSpec;
-import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
 import com.bitvantage.bitvantagecaching.BitvantageStoreException;
 import com.bitvantage.bitvantagecaching.OptimisticLockingStore;
 import com.bitvantage.bitvantagecaching.PartitionKey;
 import com.bitvantage.bitvantagecaching.VersionedWrapper;
+import java.util.Collections;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
+import software.amazon.awssdk.core.SdkBytes;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
+import software.amazon.awssdk.services.dynamodb.model.ExpectedAttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
+import software.amazon.awssdk.services.dynamodb.model.GetItemResponse;
+import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 
 @Slf4j
 public class DynamoOptimisticLockingStore<K extends PartitionKey, V>
-        implements OptimisticLockingStore<K, V> {
+    implements OptimisticLockingStore<K, V> {
 
-    private final String keyName;
-    private final VersionedDynamoStoreSerializer<K, V> serializer;
+  private final String keyName;
+  private final VersionedDynamoStoreSerializer<K, V> serializer;
 
-    private final Table table;
-    private final DynamoDB dynamo;
+  private final String tableName;
+  private final DynamoDbClient dynamo;
 
-    public DynamoOptimisticLockingStore(
-            final AmazonDynamoDB client, final String table,
-            final VersionedDynamoStoreSerializer<K, V> serializer)
-            throws BitvantageStoreException {
-        this.dynamo = new DynamoDB(client);
-        this.table = dynamo.getTable(table);
-        this.keyName = serializer.getPartitionKeyName();
-        this.serializer = serializer;
+  public DynamoOptimisticLockingStore(
+      final DynamoDbClient client,
+      final String tableName,
+      final VersionedDynamoStoreSerializer<K, V> serializer)
+      throws BitvantageStoreException {
+    this.dynamo = client;
+    this.tableName = tableName;
+    this.keyName = serializer.getPartitionKeyName();
+    this.serializer = serializer;
+  }
+
+  @Override
+  public Optional<VersionedWrapper<V>> get(final K key)
+      throws BitvantageStoreException, InterruptedException {
+
+    final Map<String, AttributeValue> result = retrieveItem(key);
+    return result.isEmpty() ? Optional.empty() : Optional.ofNullable(serializer.deserializeValue(result));
+  }
+
+  @Override
+  public Optional<UUID> putOnMatch(final K key, final V value, final UUID match)
+      throws BitvantageStoreException, InterruptedException {
+    final Map<String, AttributeValue> item = serializer.serialize(key, value);
+
+    final Map<String, ExpectedAttributeValue> expected = serializer.getExpectation(match);
+
+    final PutItemRequest request =
+        PutItemRequest.builder().tableName(tableName).item(item).expected(expected).build();
+
+    try {
+      dynamo.putItem(request);
+      final UUID uuid = serializer.deserializeUuid(item);
+
+      return Optional.of(uuid);
+    } catch (final ConditionalCheckFailedException e) {
+      log.info("Condition checked failed: " + "key={} value={} match={}.", key, value, match, e);
+      return Optional.empty();
     }
+  }
 
-    @Override
-    public VersionedWrapper<V> get(final K key)
-            throws BitvantageStoreException, InterruptedException {
-        final Item result = retrieveItem(key);
-        return result == null ? null : serializer.deserializeValue(result);
+  @Override
+  public Optional<UUID> putIfAbsent(final K key, final V value)
+      throws BitvantageStoreException, InterruptedException {
+    final Map<String, AttributeValue> item = serializer.serialize(key, value);
+
+    final Map<String, ExpectedAttributeValue> expected = serializer.getNonexistenceExpectation();
+
+    final PutItemRequest request =
+        PutItemRequest.builder().tableName(tableName).item(item).expected(expected).build();
+
+    try {
+      dynamo.putItem(request);
+      final UUID uuid = serializer.deserializeUuid(item);
+
+      return Optional.of(uuid);
+    } catch (final ConditionalCheckFailedException e) {
+      log.info("Nonexistince checked failed: " + "key={} value={} match={}.", key, value, e);
+      return Optional.empty();
     }
+  }
 
-    @Override
-    public Optional<UUID> putOnMatch(final K key, final V value,
-                                     final UUID match)
-            throws BitvantageStoreException, InterruptedException {
-        final Item item = serializer.serialize(key, value);
+  @Override
+  public void put(final K key, final V value)
+      throws BitvantageStoreException, InterruptedException {
+    final Map<String, AttributeValue> item = serializer.serialize(key, value);
+    dynamo.putItem(PutItemRequest.builder().tableName(tableName).item(item).build());
+  }
 
-        final Expected expected = serializer.getExpectation(match);
-        final PutItemSpec request = new PutItemSpec()
-                .withExpected(expected)
-                .withItem(item);
+  private Map<String, AttributeValue> retrieveItem(final K key) throws BitvantageStoreException {
+    final byte[] keyBytes = serializer.getPartitionKey(key);
 
-        try {
-            table.putItem(request);
-            final UUID uuid = serializer.deserializeUuid(item);
+    final Map<String, AttributeValue> dynamoKey =
+        Collections.singletonMap(keyName, AttributeValue.fromB(SdkBytes.fromByteArray(keyBytes)));
 
-            return Optional.of(uuid);
-        } catch (final ConditionalCheckFailedException e) {
-            log.info("Condition checked failed: " +
-                     "key={} value={} match={}.", key, value, match, e);
-            return Optional.empty();
-        }
-    }
+    final GetItemRequest request =
+        GetItemRequest.builder().key(dynamoKey).tableName(tableName).build();
 
-    @Override
-    public Optional<UUID> putIfAbsent(final K key, final V value)
-            throws BitvantageStoreException, InterruptedException  {
-        final Item item = serializer.serialize(key, value);
+    final GetItemResponse response = dynamo.getItem(request);
 
-        final Expected expected = serializer.getNonexistenceExpectation();
-        final PutItemSpec request = new PutItemSpec()
-                .withExpected(expected)
-                .withItem(item);
-
-        try {
-            table.putItem(request);
-            final UUID uuid = serializer.deserializeUuid(item);
-
-            return Optional.of(uuid);
-        } catch (final ConditionalCheckFailedException e) {
-            log.info("Nonexistince checked failed: " +
-                     "key={} value={} match={}.", key, value, e);
-            return Optional.empty();
-        }
-    }
-
-    @Override
-    public void put(final K key, final V value)
-            throws BitvantageStoreException, InterruptedException {
-        final Item item = serializer.serialize(key, value);
-        table.putItem(item);
-    }
-
-    private Item retrieveItem(final K key) throws BitvantageStoreException {
-        final byte[] keyBytes = serializer.getPartitionKey(key);
-
-        final KeyAttribute hashKey = new KeyAttribute(keyName, keyBytes);
-        final GetItemSpec spec = new GetItemSpec()
-                .withPrimaryKey(hashKey)
-                .withConsistentRead(true);
-        return table.getItem(spec);
-    }
-
+    return response.item();
+  }
 }

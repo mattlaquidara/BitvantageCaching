@@ -15,68 +15,82 @@
  */
 package com.bitvantage.bitvantagecaching.dynamo;
 
-import com.amazonaws.services.dynamodbv2.document.Expected;
-import com.amazonaws.services.dynamodbv2.document.Item;
 import com.bitvantage.bitvantagecaching.BitvantageStoreException;
 import com.bitvantage.bitvantagecaching.PartitionKey;
 import com.bitvantage.bitvantagecaching.VersionedWrapper;
+import com.google.common.collect.ImmutableMap;
 import java.nio.ByteBuffer;
+import java.util.Collections;
+import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import software.amazon.awssdk.core.SdkBytes;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.ComparisonOperator;
+import software.amazon.awssdk.services.dynamodb.model.ExpectedAttributeValue;
 
 @RequiredArgsConstructor
 public class VersionedDynamoStoreSerializer<P extends PartitionKey, V> {
 
-    private final DynamoStoreSerializer<P, V> serializer;
+  private final DynamoStoreSerializer<P, V> serializer;
 
-    public String getVersionKey() {
-        return "version";
-    }
+  public String getVersionKey() {
+    return "version";
+  }
 
-    public Item serialize(final P partition, final V value)
-            throws BitvantageStoreException {
-        final Item item = serializer.serialize(partition, value);
-        final byte[] uuidBytes = getUuidBytes(UUID.randomUUID());
-        return item.withBinary(getVersionKey(), uuidBytes);
-    }
+  public Map<String, AttributeValue> serialize(final P partition, final V value)
+      throws BitvantageStoreException {
+    final Map<String, AttributeValue> item = serializer.serialize(partition, value);
+    final byte[] uuidBytes = getUuidBytes(UUID.randomUUID());
+    return ImmutableMap.<String, AttributeValue>builderWithExpectedSize(item.size() + 1)
+        .putAll(item)
+        .put(getVersionKey(), AttributeValue.fromB(SdkBytes.fromByteArray(uuidBytes)))
+        .build();
+  }
 
-    public VersionedWrapper<V> deserializeValue(final Item item)
-            throws BitvantageStoreException {
-        final V value = serializer.deserializeValue(item);
-        final UUID uuid = deserializeUuid(item);
+  public VersionedWrapper<V> deserializeValue(final Map<String, AttributeValue> item)
+      throws BitvantageStoreException {
+    final V value = serializer.deserializeValue(item);
+    final UUID uuid = deserializeUuid(item);
 
-        return new VersionedWrapper(uuid, value);
-    }
+    return new VersionedWrapper(uuid, value);
+  }
 
-    public UUID deserializeUuid(final Item item) {
-        final byte[] uuidBytes = item.getBinary(getVersionKey());
-        final ByteBuffer buffer = ByteBuffer.wrap(uuidBytes);
-        final long high = buffer.getLong();
-        final long low = buffer.getLong();
-        return new UUID(high, low);
-    }
+  public UUID deserializeUuid(final Map<String, AttributeValue> item) {
+    final AttributeValue versionAttribute = item.get(getVersionKey());
+    final byte[] uuidBytes = versionAttribute.b().asByteArray();
+    final ByteBuffer buffer = ByteBuffer.wrap(uuidBytes);
+    final long high = buffer.getLong();
+    final long low = buffer.getLong();
+    return new UUID(high, low);
+  }
 
-    public Expected getExpectation(final UUID match) {
-        return new Expected(getVersionKey()).eq(getUuidBytes(match));
-    }
-    
-    public Expected getNonexistenceExpectation() {
-        return new Expected(getVersionKey()).notExist();
-    }
+  public Map<String, ExpectedAttributeValue> getExpectation(final UUID match) {
+    return Collections.singletonMap(
+        getVersionKey(),
+        ExpectedAttributeValue.builder()
+            .comparisonOperator(ComparisonOperator.EQ)
+            .attributeValueList(AttributeValue.fromB(SdkBytes.fromByteArray(getUuidBytes(match))))
+            .build());
+  }
 
-    public byte[] getPartitionKey(final P key) throws BitvantageStoreException {
-        return serializer.getPartitionKey(key);
-    }
+  public Map<String, ExpectedAttributeValue> getNonexistenceExpectation() {
+    return Collections.singletonMap(
+        getVersionKey(), ExpectedAttributeValue.builder().exists(false).build());
+  }
 
-    public String getPartitionKeyName() throws BitvantageStoreException {
-        return serializer.getPartitionKeyName();
-    }
+  public byte[] getPartitionKey(final P key) throws BitvantageStoreException {
+    return serializer.getPartitionKey(key);
+  }
 
-    private static byte[] getUuidBytes(final UUID uuid) {
-        final ByteBuffer buffer = ByteBuffer.wrap(new byte[16]);
-        buffer.putLong(uuid.getMostSignificantBits());
-        buffer.putLong(uuid.getLeastSignificantBits());
-        return buffer.array();
-    }
+  public String getPartitionKeyName() throws BitvantageStoreException {
+    return serializer.getPartitionKeyName();
+  }
 
+  private static byte[] getUuidBytes(final UUID uuid) {
+    final ByteBuffer buffer = ByteBuffer.wrap(new byte[16]);
+    buffer.putLong(uuid.getMostSignificantBits());
+    buffer.putLong(uuid.getLeastSignificantBits());
+    return buffer.array();
+  }
 }

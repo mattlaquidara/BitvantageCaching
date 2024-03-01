@@ -21,6 +21,7 @@ import com.google.common.collect.Range;
 import com.google.common.collect.RangeMap;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Optional;
 
 public class TwoLevelCachingRangedStore<P extends PartitionKey, R extends RangeKey<R>, V>
         implements RangedConditionedStore<P, R, V> {
@@ -120,14 +121,14 @@ public class TwoLevelCachingRangedStore<P extends PartitionKey, R extends RangeK
     }
 
     @Override
-    public V get(final P partition, final R rangeValue)
+    public Optional<V> get(final P partition, final R rangeValue)
             throws BitvantageStoreException, InterruptedException {
         final NavigableMap<R, V> values = getValuesInRange(
                 partition, rangeValue, rangeValue);
         if (values.isEmpty()) {
-            return null;
+            return Optional.empty();
         }
-        return values.values().iterator().next();
+        return Optional.of(values.values().iterator().next());
     }
 
     @Override
@@ -135,5 +136,11 @@ public class TwoLevelCachingRangedStore<P extends PartitionKey, R extends RangeK
             BitvantageStoreException, InterruptedException {
         return !getValuesInRange(partition, rangeValue, rangeValue).isEmpty();
     }
+
+  @Override
+  public void delete(P partition) throws BitvantageStoreException, InterruptedException {
+    cache.invalidate(partition);
+    store.delete(partition);
+  }
 
 }

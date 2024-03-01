@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Optional;
 import java.util.TreeMap;
 
 public class InMemoryPartitionedStore<P extends PartitionKey, R extends RangeKey<R>, V>
@@ -136,13 +137,14 @@ public class InMemoryPartitionedStore<P extends PartitionKey, R extends RangeKey
     }
 
     @Override
-    public V get(final P partition, final R rangeValue)
+    public Optional<V> get(final P partition, final R rangeValue)
             throws BitvantageStoreException, InterruptedException {
         final NavigableMap<R, V> partitionValues
                 = partitionedMap.get(partition);
 
-        return (partitionValues == null) ? null
-                : partitionValues.get(rangeValue);
+    return (partitionValues == null)
+        ? Optional.empty()
+        : Optional.ofNullable(partitionValues.get(rangeValue));
     }
 
     @Override
@@ -152,4 +154,8 @@ public class InMemoryPartitionedStore<P extends PartitionKey, R extends RangeKey
                partitionedMap.get(partition).containsKey(rangeValue);
     }
 
+  @Override
+  public void delete(P partition) throws BitvantageStoreException, InterruptedException {
+    partitionedMap.remove(partition);
+  }
 }

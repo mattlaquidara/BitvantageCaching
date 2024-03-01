@@ -16,6 +16,7 @@
 package com.bitvantage.bitvantagecaching;
 
 import java.util.Map;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
@@ -33,16 +34,21 @@ public class TwoLevelCachingStore<K extends PartitionKey, V> implements Store<K,
   }
 
   @Override
-  public V get(K key) throws InterruptedException, BitvantageStoreException {
-    V cacheValue = cache.get(key);
-    if (cacheValue == null) {
-      V storeValue = store.get(key);
-      if (storeValue != null) {
-        cache.put(key, storeValue);
+  public Optional<V> get(K key) throws InterruptedException, BitvantageStoreException {
+    final Optional<V> returnValue;
+    
+    final Optional<V> cacheValue = cache.get(key);
+    if (cacheValue.isEmpty()) {
+      final Optional<V> storeValue = store.get(key);
+      if (storeValue.isPresent()) {
+        cache.put(key, storeValue.get());
       }
       return storeValue;
+    } else {
+      returnValue = cacheValue;
     }
-    return cacheValue;
+    
+    return returnValue;
   }
 
   @Override

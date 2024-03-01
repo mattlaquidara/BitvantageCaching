@@ -15,7 +15,6 @@
  */
 package com.bitvantage.bitvantagecaching.s3;
 
-import com.amazonaws.services.s3.model.S3Object;
 import com.bitvantage.bitvantagecaching.BitvantageStoreException;
 import com.bitvantage.bitvantagecaching.PartitionKey;
 
@@ -27,6 +26,6 @@ public interface S3Serializer<P extends PartitionKey, V> {
 
     byte[] serializeValue(V item) throws BitvantageStoreException;
 
-    V deserializeValue(S3Object item) throws BitvantageStoreException;
+    V deserializeValue(byte[] item) throws BitvantageStoreException;
 
 }

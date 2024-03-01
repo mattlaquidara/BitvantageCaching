@@ -15,12 +15,14 @@
  */
 package com.bitvantage.bitvantagecaching;
 
+import java.util.Optional;
+
 /**
  * Interface for a key-value cache.
  */
 public interface TwoLevelCache<P extends PartitionKey, V> {
 
-    V get(P key) throws InterruptedException, BitvantageStoreException;
+    Optional<V> get(P key) throws InterruptedException, BitvantageStoreException;
 
     void put(P key, V value) throws InterruptedException,
             BitvantageStoreException;

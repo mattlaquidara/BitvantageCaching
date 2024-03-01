@@ -20,6 +20,7 @@ import com.bitvantage.bitvantagecaching.PartitionKey;
 import com.bitvantage.bitvantagecaching.Store;
 import com.google.common.collect.ImmutableMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class InMemoryHashStore<K extends PartitionKey, V> implements Store<K, V> {
@@ -36,8 +37,8 @@ public class InMemoryHashStore<K extends PartitionKey, V> implements Store<K, V>
   }
 
   @Override
-  public V get(K key) {
-    return map.get(key);
+  public Optional<V> get(K key) {
+    return Optional.ofNullable(map.get(key));
   }
 
   @Override

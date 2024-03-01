@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import com.bitvantage.bitvantagecaching.ValueSerializer;
+import java.util.Optional;
 
 @RequiredArgsConstructor
 public class FlatFileStore<K extends PartitionKey, V> implements Store<K, V> {
@@ -38,9 +39,10 @@ public class FlatFileStore<K extends PartitionKey, V> implements Store<K, V> {
   }
 
   @Override
-  public V get(final K key) throws BitvantageStoreException, InterruptedException {
+  public Optional<V> get(final K key) throws BitvantageStoreException, InterruptedException {
     try {
-      return serializer.getValue(Files.readAllBytes(directory.resolve(fileManager.getName(key))));
+      return Optional.of(
+          serializer.getValue(Files.readAllBytes(directory.resolve(fileManager.getName(key)))));
     } catch (final IOException e) {
       throw new BitvantageStoreException(e);
     }

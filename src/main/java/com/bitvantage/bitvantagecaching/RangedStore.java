@@ -17,39 +17,38 @@ package com.bitvantage.bitvantagecaching;
 
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Optional;
 
 public interface RangedStore<P extends PartitionKey, R extends RangeKey<R>, V> {
 
-    NavigableMap<R, V> getValuesInRange(P partition, R min, R max)
-            throws InterruptedException, BitvantageStoreException;
+  NavigableMap<R, V> getValuesInRange(P partition, R min, R max)
+      throws InterruptedException, BitvantageStoreException;
 
-    NavigableMap<R, V> getValuesAbove(P partition, R min)
-            throws InterruptedException, BitvantageStoreException;
+  NavigableMap<R, V> getValuesAbove(P partition, R min)
+      throws InterruptedException, BitvantageStoreException;
 
-    NavigableMap<R, V> getValuesBelow(P partition, R max)
-            throws InterruptedException, BitvantageStoreException;
+  NavigableMap<R, V> getValuesBelow(P partition, R max)
+      throws InterruptedException, BitvantageStoreException;
 
-    NavigableMap<R, V> getNextValues(P partition, R min, int count)
-            throws InterruptedException, BitvantageStoreException;
+  NavigableMap<R, V> getNextValues(P partition, R min, int count)
+      throws InterruptedException, BitvantageStoreException;
 
-    NavigableMap<R, V> getHeadValues(P partition, int count)
-            throws InterruptedException, BitvantageStoreException;
+  NavigableMap<R, V> getHeadValues(P partition, int count)
+      throws InterruptedException, BitvantageStoreException;
 
-    NavigableMap<R, V> getPartition(P partition)
-            throws InterruptedException, BitvantageStoreException;
+  NavigableMap<R, V> getPartition(P partition)
+      throws InterruptedException, BitvantageStoreException;
 
-    boolean contains(P partition, R rangeValue)
-            throws BitvantageStoreException, InterruptedException;
-    
-    V get(P partition, R rangeValue)
-            throws BitvantageStoreException, InterruptedException;
+  boolean contains(P partition, R rangeValue) throws BitvantageStoreException, InterruptedException;
 
-    void put(P partition, R rangeValue, V value)
-            throws BitvantageStoreException, InterruptedException;
+  Optional<V> get(P partition, R rangeValue) throws BitvantageStoreException, InterruptedException;
 
-    void putAll(P partition, Map<R, V> entries)
-            throws BitvantageStoreException, InterruptedException;
+  void put(P partition, R rangeValue, V value)
+      throws BitvantageStoreException, InterruptedException;
 
-    boolean isEmpty() throws BitvantageStoreException, InterruptedException;
+  void putAll(P partition, Map<R, V> entries) throws BitvantageStoreException, InterruptedException;
 
+  boolean isEmpty() throws BitvantageStoreException, InterruptedException;
+
+  void delete(P partition) throws BitvantageStoreException, InterruptedException;
 }

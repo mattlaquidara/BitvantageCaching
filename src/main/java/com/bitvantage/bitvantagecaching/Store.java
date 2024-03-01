@@ -16,6 +16,7 @@
 package com.bitvantage.bitvantagecaching;
 
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Interface for a key-value store.
@@ -25,7 +26,7 @@ public interface Store<K extends PartitionKey, V> {
     boolean containsKey(K key) throws BitvantageStoreException, 
             InterruptedException;
 
-    V get(K key) throws BitvantageStoreException, InterruptedException;
+    Optional<V> get(K key) throws BitvantageStoreException, InterruptedException;
 
     void put(K key, V value) throws BitvantageStoreException,
             InterruptedException;

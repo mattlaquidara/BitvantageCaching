@@ -15,100 +15,109 @@
  */
 package com.bitvantage.bitvantagecaching.s3;
 
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.AmazonS3Exception;
-import com.amazonaws.services.s3.model.ObjectListing;
-import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.S3Object;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.bitvantage.bitvantagecaching.BitvantageStoreException;
 import com.bitvantage.bitvantagecaching.PartitionKey;
 import com.bitvantage.bitvantagecaching.Store;
 import com.google.common.collect.ImmutableMap;
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import software.amazon.awssdk.core.ResponseBytes;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
+import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
+import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.S3Object;
 
 @RequiredArgsConstructor
 public class S3Store<P extends PartitionKey, V> implements Store<P, V> {
 
-    private final AmazonS3 s3;
-    private final String bucket;
-    private final S3Serializer<P, V> serializer;
+  private final S3Client s3;
+  private final String bucket;
+  private final S3Serializer<P, V> serializer;
 
-    @Override
-    public boolean containsKey(final P key) throws BitvantageStoreException,
-            InterruptedException {
-        final String keyString = serializer.getKey(key);
-        return s3.doesObjectExist(bucket, keyString);
+  @Override
+  public boolean containsKey(final P key) throws BitvantageStoreException, InterruptedException {
+    final String keyString = serializer.getKey(key);
+
+    try {
+      s3.headObject(HeadObjectRequest.builder().bucket(bucket).key(keyString).build());
+    } catch (final NoSuchKeyException e) {
+      return false;
     }
+    return true;
+  }
 
-    @Override
-    public V get(final P key) throws BitvantageStoreException,
-            InterruptedException {
-        try {
-            final String keyString = serializer.getKey(key);
+  @Override
+  public Optional<V> get(final P key) throws BitvantageStoreException, InterruptedException {
+    try {
+      final String keyString = serializer.getKey(key);
 
-            final S3Object object = s3.getObject(bucket, keyString);
-            return serializer.deserializeValue(object);
-        } catch (final AmazonS3Exception e) {
-            if (e.getStatusCode() == 404) {
-                return null;
-            }
-            throw e;
-        }
-
+      final ResponseBytes<GetObjectResponse> object =
+          s3.getObjectAsBytes(GetObjectRequest.builder().bucket(bucket).key(keyString).build());
+      return Optional.of(serializer.deserializeValue(object.asByteArray()));
+    } catch (final NoSuchKeyException e) {
+      return Optional.empty();
     }
+  }
 
-    @Override
-    public void put(final P key, final V value) throws BitvantageStoreException,
-            InterruptedException {
-        final String keyString = serializer.getKey(key);
-        final byte[] bytes = serializer.serializeValue(value);
-        final InputStream stream = new ByteArrayInputStream(bytes);
-        final ObjectMetadata metadata = new ObjectMetadata();
-        metadata.setContentLength(bytes.length);
-        s3.putObject(bucket, keyString, stream, metadata);
+  @Override
+  public void put(final P key, final V value)
+      throws BitvantageStoreException, InterruptedException {
+    final String keyString = serializer.getKey(key);
+    final byte[] bytes = serializer.serializeValue(value);
+
+    s3.putObject(
+        PutObjectRequest.builder()
+            .bucket(bucket)
+            .key(keyString)
+            .contentLength((long) bytes.length)
+            .build(),
+        RequestBody.fromBytes(bytes));
+  }
+
+  @Override
+  public void putAll(Map<P, V> entries) throws BitvantageStoreException, InterruptedException {
+    for (final Map.Entry<P, V> entry : entries.entrySet()) {
+      put(entry.getKey(), entry.getValue());
     }
+  }
 
-    @Override
-    public void putAll(Map<P, V> entries) throws BitvantageStoreException,
-            InterruptedException {
-        for (final Map.Entry<P, V> entry : entries.entrySet()) {
-            put(entry.getKey(), entry.getValue());
-        }
+  @Override
+  public Map<P, V> getAll() throws BitvantageStoreException, InterruptedException {
+    final ListObjectsV2Response listing =
+        s3.listObjectsV2(ListObjectsV2Request.builder().bucket(bucket).build());
+    final List<S3Object> objectList = listing.contents();
+    final ImmutableMap.Builder<P, V> builder = ImmutableMap.builder();
+    for (final S3Object objectRecord : objectList) {
+      final String keyString = objectRecord.key();
+      final P key = serializer.deserializeKey(keyString);
+      final ResponseBytes<GetObjectResponse> object =
+          s3.getObjectAsBytes(GetObjectRequest.builder().bucket(bucket).key(keyString).build());
+      final V value = serializer.deserializeValue(object.asByteArray());
+      builder.put(key, value);
     }
+    return builder.build();
+  }
 
-    @Override
-    public Map<P, V> getAll() throws BitvantageStoreException,
-            InterruptedException {
-        final ObjectListing listing = s3.listObjects(bucket);
-        final List<S3ObjectSummary> objectList = listing.getObjectSummaries();
-        final ImmutableMap.Builder<P, V> builder = ImmutableMap.builder();
-        for (final S3ObjectSummary summary : objectList) {
-            final String keyString = summary.getKey();
-            final S3Object object = s3.getObject(bucket, keyString);
-            final P key = serializer.deserializeKey(keyString);
-            final V value = serializer.deserializeValue(object);
-            builder.put(key, value);
-        }
-        return builder.build();
-    }
+  @Override
+  public boolean isEmpty() throws BitvantageStoreException, InterruptedException {
+    final ListObjectsV2Response listing =
+        s3.listObjectsV2(ListObjectsV2Request.builder().bucket(bucket).build());
 
-    @Override
-    public boolean isEmpty() throws BitvantageStoreException,
-            InterruptedException {
-        final ObjectListing listing = s3.listObjects(bucket);
-        final List<S3ObjectSummary> objectList = listing.getObjectSummaries();
-        return objectList.isEmpty();
-    }
+    return !listing.hasContents();
+  }
 
-    public void delete(final P key) throws BitvantageStoreException,
-            InterruptedException {
-        final String keyString = serializer.getKey(key);
-        s3.deleteObject(bucket, keyString);
-    }
-
+  @Override
+  public void delete(final P key) throws BitvantageStoreException, InterruptedException {
+    final String keyString = serializer.getKey(key);
+    s3.deleteObject(DeleteObjectRequest.builder().bucket(bucket).key(keyString).build());
+  }
 }

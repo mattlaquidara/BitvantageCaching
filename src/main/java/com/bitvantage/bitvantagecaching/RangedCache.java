@@ -29,5 +29,8 @@ public interface RangedCache<P extends PartitionKey, R extends RangeKey<R>, V> {
 
     public void put(P partition, R range, V value)
             throws InterruptedException, BitvantageStoreException;
+    
+    public void invalidate(P partition)
+            throws InterruptedException, BitvantageStoreException;
 
 }

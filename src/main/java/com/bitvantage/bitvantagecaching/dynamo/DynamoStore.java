@@ -15,25 +15,28 @@
  */
 package com.bitvantage.bitvantagecaching.dynamo;
 
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
-import com.amazonaws.services.dynamodbv2.document.BatchWriteItemOutcome;
-import com.amazonaws.services.dynamodbv2.document.DynamoDB;
-import com.amazonaws.services.dynamodbv2.document.Item;
-import com.amazonaws.services.dynamodbv2.document.ItemCollection;
-import com.amazonaws.services.dynamodbv2.document.KeyAttribute;
-import com.amazonaws.services.dynamodbv2.document.ScanOutcome;
-import com.amazonaws.services.dynamodbv2.document.Table;
-import com.amazonaws.services.dynamodbv2.document.TableWriteItems;
-import com.amazonaws.services.dynamodbv2.document.spec.DeleteItemSpec;
-import com.amazonaws.services.dynamodbv2.document.spec.GetItemSpec;
-import com.amazonaws.services.dynamodbv2.model.WriteRequest;
 import com.bitvantage.bitvantagecaching.BitvantageStoreException;
 import com.bitvantage.bitvantagecaching.PartitionKey;
 import com.bitvantage.bitvantagecaching.Store;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import software.amazon.awssdk.core.SdkBytes;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.BatchWriteItemRequest;
+import software.amazon.awssdk.services.dynamodb.model.BatchWriteItemResponse;
+import software.amazon.awssdk.services.dynamodb.model.DeleteItemRequest;
+import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
+import software.amazon.awssdk.services.dynamodb.model.GetItemResponse;
+import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
+import software.amazon.awssdk.services.dynamodb.model.PutRequest;
+import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
+import software.amazon.awssdk.services.dynamodb.model.ScanResponse;
+import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
 
 public class DynamoStore<P extends PartitionKey, V> implements Store<P, V> {
 
@@ -42,14 +45,16 @@ public class DynamoStore<P extends PartitionKey, V> implements Store<P, V> {
   private final String keyName;
   private final DynamoStoreSerializer<P, V> serializer;
 
-  private final Table table;
-  private final DynamoDB dynamo;
+  private final String tableName;
+  private final DynamoDbClient dynamo;
 
   public DynamoStore(
-      final AmazonDynamoDB client, final String table, final DynamoStoreSerializer<P, V> serializer)
+      final DynamoDbClient dynamo,
+      final String tableName,
+      final DynamoStoreSerializer<P, V> serializer)
       throws BitvantageStoreException {
-    this.dynamo = new DynamoDB(client);
-    this.table = dynamo.getTable(table);
+    this.dynamo = dynamo;
+    this.tableName = tableName;
     this.keyName = serializer.getPartitionKeyName();
     this.serializer = serializer;
   }
@@ -60,43 +65,56 @@ public class DynamoStore<P extends PartitionKey, V> implements Store<P, V> {
   }
 
   @Override
-  public V get(final P key) throws BitvantageStoreException, InterruptedException {
+  public Optional<V> get(final P key) throws BitvantageStoreException, InterruptedException {
 
-    final Item result = retrieveItem(key);
-    return result == null ? null : serializer.deserializeValue(result);
+    final Map<String, AttributeValue> result = retrieveItem(key);
+    return result.isEmpty() ? Optional.empty() : Optional.of(serializer.deserializeValue(result));
   }
 
   @Override
   public void put(final P key, final V value)
       throws BitvantageStoreException, InterruptedException {
-    final Item item = serializer.serialize(key, value);
-    table.putItem(item);
+    final Map<String, AttributeValue> item = serializer.serialize(key, value);
+    dynamo.putItem(PutItemRequest.builder().tableName(tableName).item(item).build());
   }
 
   @Override
   public void putAll(final Map<P, V> entries)
       throws BitvantageStoreException, InterruptedException {
-    final ImmutableList.Builder<Item> builder = ImmutableList.builder();
+    final ImmutableList.Builder<Map<String, AttributeValue>> builder = ImmutableList.builder();
     for (final Map.Entry<P, V> entry : entries.entrySet()) {
       builder.add(serializer.serialize(entry.getKey(), entry.getValue()));
     }
-    final List<Item> items = builder.build();
+    final List<Map<String, AttributeValue>> items = builder.build();
     final int total = items.size();
 
     int start = 0;
 
     while (start < total) {
       final int end = Math.min(total, start + BATCH_SIZE);
-      final List<Item> subItems = items.subList(start, end);
+      final List<Map<String, AttributeValue>> subItems = items.subList(start, end);
+      final List<WriteRequest> writes =
+          subItems.stream()
+              .map(
+                  item ->
+                      WriteRequest.builder()
+                          .putRequest(PutRequest.builder().item(item).build())
+                          .build())
+              .collect(ImmutableList.toImmutableList());
 
-      final TableWriteItems writeRequest =
-          new TableWriteItems(table.getTableName()).withItemsToPut(subItems);
-      final BatchWriteItemOutcome outcome = dynamo.batchWriteItem(writeRequest);
-      Map<String, List<WriteRequest>> unprocessed = outcome.getUnprocessedItems();
-      while (unprocessed.size() > 0) {
+      final BatchWriteItemResponse outcome =
+          dynamo.batchWriteItem(
+              BatchWriteItemRequest.builder()
+                  .requestItems(Collections.singletonMap(tableName, writes))
+                  .build());
+
+      Map<String, List<WriteRequest>> unprocessed = outcome.unprocessedItems();
+      while (!unprocessed.isEmpty()) {
         Thread.sleep(1000);
-        final BatchWriteItemOutcome partialOutcome = dynamo.batchWriteItemUnprocessed(unprocessed);
-        unprocessed = partialOutcome.getUnprocessedItems();
+        final BatchWriteItemResponse partialOutcome =
+            dynamo.batchWriteItem(
+                BatchWriteItemRequest.builder().requestItems(unprocessed).build());
+        unprocessed = partialOutcome.unprocessedItems();
       }
       start = end;
     }
@@ -104,9 +122,9 @@ public class DynamoStore<P extends PartitionKey, V> implements Store<P, V> {
 
   @Override
   public Map<P, V> getAll() throws BitvantageStoreException, InterruptedException {
-    final ItemCollection<ScanOutcome> result = table.scan();
+    final ScanResponse result = dynamo.scan(ScanRequest.builder().tableName(tableName).build());
     final ImmutableMap.Builder<P, V> builder = ImmutableMap.builder();
-    for (final Item item : result) {
+    for (final Map<String, AttributeValue> item : result.items()) {
       final P key = serializer.deserializeKey(item);
       final V value = serializer.deserializeValue(item);
       builder.put(key, value);
@@ -119,19 +137,29 @@ public class DynamoStore<P extends PartitionKey, V> implements Store<P, V> {
     return false;
   }
 
-  private Item retrieveItem(final P key) throws BitvantageStoreException {
+  private Map<String, AttributeValue> retrieveItem(final P key) throws BitvantageStoreException {
     final byte[] keyBytes = serializer.getPartitionKey(key);
-    final KeyAttribute hashKey = new KeyAttribute(keyName, keyBytes);
-    final GetItemSpec spec = new GetItemSpec().withPrimaryKey(hashKey).withConsistentRead(true);
-
-    return table.getItem(spec);
+    final GetItemRequest request =
+        GetItemRequest.builder()
+            .key(
+                Collections.singletonMap(
+                    keyName, AttributeValue.fromB(SdkBytes.fromByteArray(keyBytes))))
+            .tableName(tableName)
+            .build();
+    final GetItemResponse response = dynamo.getItem(request);
+    return response.item();
   }
 
   @Override
   public void delete(final P key) throws BitvantageStoreException, InterruptedException {
     final byte[] keyBytes = serializer.getPartitionKey(key);
-    final KeyAttribute hashKey = new KeyAttribute(keyName, keyBytes);
-    final DeleteItemSpec spec = new DeleteItemSpec().withPrimaryKey(hashKey);
-    table.deleteItem(spec);
+    final DeleteItemRequest request =
+        DeleteItemRequest.builder()
+            .tableName(tableName)
+            .key(
+                Collections.singletonMap(
+                    keyName, AttributeValue.fromB(SdkBytes.fromByteArray(keyBytes))))
+            .build();
+    dynamo.deleteItem(request);
   }
 }
