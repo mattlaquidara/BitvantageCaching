@@ -11,7 +11,7 @@
         <maven.compiler.target>1.8</maven.compiler.target>
         <aws.java.sdk.version>2.23.1</aws.java.sdk.version>
     </properties>
-     <dependencyManagement>
+    <dependencyManagement>
         <dependencies>
             <dependency>
                 <groupId>software.amazon.awssdk</groupId>
@@ -57,6 +57,10 @@
         <dependency>
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>dynamodb</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>dynamodb-enhanced</artifactId>
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>

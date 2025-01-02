@@ -19,6 +19,23 @@ import java.util.UUID;
 import lombok.Value;
 
 @Value
-public class UuidKey implements PartitionKey {
-    private final UUID uuid;
+public class UuidKey implements PartitionKey, RangeKey<UuidKey> {
+  private static final UuidKey MIN = new UuidKey(new UUID(0, 0));
+  private static final UuidKey MAX = new UuidKey(new UUID(0xFFFFFFFFL, 0xFFFFFFFFL));
+  private final UUID uuid;
+
+  @Override
+  public UuidKey getRangeMin() {
+    return MIN;
+  }
+
+  @Override
+  public UuidKey getRangeMax() {
+    return MAX;
+  }
+
+  @Override
+  public int compareTo(final UuidKey o) {
+    return uuid.compareTo(o.uuid);
+  }
 }

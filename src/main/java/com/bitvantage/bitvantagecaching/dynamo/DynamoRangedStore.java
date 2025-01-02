@@ -19,7 +19,6 @@ import com.bitvantage.bitvantagecaching.BitvantageStoreException;
 import com.bitvantage.bitvantagecaching.PartitionKey;
 import com.bitvantage.bitvantagecaching.RangeKey;
 import com.bitvantage.bitvantagecaching.RangedConditionedStore;
-import com.bitvantage.bitvantagecaching.VersionedWrapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedMap;
